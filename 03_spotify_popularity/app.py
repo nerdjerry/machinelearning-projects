@@ -83,7 +83,7 @@ def load_data() -> pd.DataFrame:
         if all(col in df.columns for col in required):
             return df
 
-    # --- Synthetic fallback (~5 000 rows) ---
+    # --- Synthetic fallback (~5000 rows) ---
     rng = np.random.RandomState(42)
     n = 5000
 
@@ -220,7 +220,7 @@ def train_all_models(_X_train, _X_test, _y_train, _y_test):
 def compute_shap_values(_model, _X_test):
     """Compute SHAP values for the best tree-based model.
 
-    Uses TreeExplainer which is optimised for tree ensembles and
+    Uses TreeExplainer which is optimized for tree ensembles and
     returns a numpy array of shape (n_samples, n_features).
     """
     explainer = shap.TreeExplainer(_model)
@@ -368,9 +368,12 @@ def main():
         ).T.round(4)
         metrics_df.index.name = "Model"
 
-        st.dataframe(metrics_df.style.highlight_min(subset=["MAE", "RMSE"], color="#d4edda")
-                      .highlight_max(subset=["R²"], color="#d4edda"),
-                      use_container_width=True)
+        styled = (
+            metrics_df.style
+            .highlight_min(subset=["MAE", "RMSE"], color="#d4edda")
+            .highlight_max(subset=["R²"], color="#d4edda")
+        )
+        st.dataframe(styled, use_container_width=True)
 
         # Bar charts for each metric
         fig, axes = plt.subplots(1, 3, figsize=(14, 4))
