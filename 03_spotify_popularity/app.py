@@ -145,8 +145,12 @@ def get_correlation_matrix(df: pd.DataFrame) -> pd.DataFrame:
 def split_and_scale(df: pd.DataFrame):
     """Split data 80/20 and standard-scale the features.
 
-    Returns X_train, X_test, y_train, y_test (all NumPy arrays),
-    the fitted scaler, and the feature-name list.
+    Returns
+    -------
+    X_train, X_test, y_train, y_test : np.ndarray
+        Train/test splits of the features and target.
+    scaler : StandardScaler
+        The fitted scaler used to transform the features.
     """
     X = df[AUDIO_FEATURES].values
     y = df[TARGET].values
