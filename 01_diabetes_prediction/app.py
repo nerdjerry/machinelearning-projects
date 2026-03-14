@@ -186,30 +186,30 @@ def evaluate_scaling(
 
 @st.cache_data
 def compare_models(
-    _X_train: np.ndarray,
-    _X_test: np.ndarray,
-    _y_train: np.ndarray,
-    _y_test: np.ndarray,
+    X_train: np.ndarray,
+    X_test: np.ndarray,
+    y_train: np.ndarray,
+    y_test: np.ndarray,
 ) -> pd.DataFrame:
     """Fit every model on scaled data and return a comparison DataFrame.
 
     Returns columns [Model, Accuracy, F1, ROC-AUC].
     """
     scaler = StandardScaler()
-    X_tr = scaler.fit_transform(_X_train)
-    X_te = scaler.transform(_X_test)
+    X_tr = scaler.fit_transform(X_train)
+    X_te = scaler.transform(X_test)
 
     rows = []
     for name, model in get_models().items():
-        model.fit(X_tr, _y_train)
+        model.fit(X_tr, y_train)
         preds = model.predict(X_te)
         proba = model.predict_proba(X_te)[:, 1]
         rows.append(
             {
                 "Model": name,
-                "Accuracy": round(accuracy_score(_y_test, preds), 4),
-                "F1": round(f1_score(_y_test, preds), 4),
-                "ROC-AUC": round(roc_auc_score(_y_test, proba), 4),
+                "Accuracy": round(accuracy_score(y_test, preds), 4),
+                "F1": round(f1_score(y_test, preds), 4),
+                "ROC-AUC": round(roc_auc_score(y_test, proba), 4),
             }
         )
 
