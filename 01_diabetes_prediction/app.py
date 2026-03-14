@@ -141,10 +141,10 @@ def get_models() -> dict:
 
 @st.cache_data
 def evaluate_scaling(
-    _X_train: np.ndarray,
-    _X_test: np.ndarray,
-    _y_train: np.ndarray,
-    _y_test: np.ndarray,
+    X_train: np.ndarray,
+    X_test: np.ndarray,
+    y_train: np.ndarray,
+    y_test: np.ndarray,
 ) -> pd.DataFrame:
     """Train Logistic Regression under three scaling strategies and compare.
 
@@ -160,24 +160,24 @@ def evaluate_scaling(
 
     rows = []
     for name, scaler in scalers.items():
-        X_tr = _X_train.copy()
-        X_te = _X_test.copy()
+        X_tr = X_train.copy()
+        X_te = X_test.copy()
 
         if scaler is not None:
             X_tr = scaler.fit_transform(X_tr)
             X_te = scaler.transform(X_te)
 
         model = LogisticRegression(max_iter=1000, random_state=42)
-        model.fit(X_tr, _y_train)
+        model.fit(X_tr, y_train)
         preds = model.predict(X_te)
         proba = model.predict_proba(X_te)[:, 1]
 
         rows.append(
             {
                 "Scaling": name,
-                "Accuracy": round(accuracy_score(_y_test, preds), 4),
-                "F1": round(f1_score(_y_test, preds), 4),
-                "ROC-AUC": round(roc_auc_score(_y_test, proba), 4),
+                "Accuracy": round(accuracy_score(y_test, preds), 4),
+                "F1": round(f1_score(y_test, preds), 4),
+                "ROC-AUC": round(roc_auc_score(y_test, proba), 4),
             }
         )
 
