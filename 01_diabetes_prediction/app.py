@@ -221,8 +221,15 @@ def run_grid_search(
     _X_train: np.ndarray,
     _y_train: np.ndarray,
     model_name: str,
+    test_size: float = 0.2,
+    random_state: int = 42,
 ) -> dict:
     """Run GridSearchCV for the chosen model and return the results.
+
+    ``test_size`` and ``random_state`` are included as explicit parameters
+    so that Streamlit's cache key changes whenever the user adjusts the
+    train/test split in the sidebar (the leading-underscore arrays are
+    excluded from the key by design).
 
     A small but representative parameter grid is used so the search
     completes quickly in a demo setting.
@@ -496,7 +503,9 @@ def main() -> None:
 
         if st.button("Run Grid Search"):
             with st.spinner("Searching hyperparameter space …"):
-                gs = run_grid_search(X_train, y_train, model_choice)
+                gs = run_grid_search(X_train, y_train, model_choice,
+                                     test_size=test_size,
+                                     random_state=int(random_state))
 
             st.success(
                 f"Best CV ROC-AUC: **{gs['best_score']}**  •  "
