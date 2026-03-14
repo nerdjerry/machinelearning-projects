@@ -25,10 +25,10 @@ pip install -r requirements.txt
 streamlit run 01_diabetes_prediction/app.py
 ```
 
-## Using Real Data
+## Data Sources
 
-The app generates synthetic data matching the Pima Indians Diabetes dataset schema. To use the real dataset:
+The app tries these sources in order:
 
-1. Download the [Pima Indians Diabetes Dataset](https://www.kaggle.com/datasets/uciml/pima-indians-diabetes-database) from Kaggle
-2. Place the CSV file at `01_diabetes_prediction/data/diabetes.csv`
-3. Restart the app
+1. **Local CSV** — Place the CSV file at `01_diabetes_prediction/data/diabetes.csv`
+2. **Kaggle** — Automatically downloads the [Pima Indians Diabetes Dataset](https://www.kaggle.com/datasets/uciml/pima-indians-diabetes-database) if Kaggle credentials are configured (`~/.kaggle/kaggle.json` or `KAGGLE_USERNAME`/`KAGGLE_KEY` env vars)
+3. **Synthetic data** — Generates ~768 realistic rows as a fallback

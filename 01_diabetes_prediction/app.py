@@ -69,12 +69,13 @@ TARGET_COL = "Outcome"
 
 @st.cache_data
 def load_data() -> pd.DataFrame:
-    """Load the diabetes dataset from CSV or generate realistic synthetic data.
+    """Load the diabetes dataset from CSV, Kaggle, or generate synthetic data.
 
-    The function first looks for ``data/diabetes.csv`` relative to this
-    script.  If the file is not found it falls back to generating ~768
-    rows of synthetic data whose distributions closely match the real
-    Pima Indians Diabetes dataset.
+    Priority order:
+      1. Local CSV at ``data/diabetes.csv``
+      2. Automatic download via ``kagglehub`` (requires Kaggle credentials)
+      3. Synthetic data (~768 rows) whose distributions approximate the real
+         Pima Indians Diabetes dataset
     """
     csv_path = os.path.join(os.path.dirname(__file__), "data", "diabetes.csv")
 
@@ -83,6 +84,21 @@ def load_data() -> pd.DataFrame:
         # Make sure the expected columns are present
         if set(FEATURE_COLS + [TARGET_COL]).issubset(df.columns):
             return df
+
+    # ----- Try Kaggle download -----
+    try:
+        import kagglehub  # noqa: E401 – optional dependency
+
+        dataset_path = kagglehub.dataset_download(
+            "uciml/pima-indians-diabetes-database"
+        )
+        kaggle_csv = os.path.join(dataset_path, "diabetes.csv")
+        if os.path.exists(kaggle_csv):
+            df = pd.read_csv(kaggle_csv)
+            if set(FEATURE_COLS + [TARGET_COL]).issubset(df.columns):
+                return df
+    except Exception:
+        pass  # Kaggle credentials not configured or download failed
 
     # ----- Synthetic data generation ----
     # We use statistics that approximate the real dataset so the demo

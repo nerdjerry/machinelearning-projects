@@ -25,10 +25,10 @@ pip install -r requirements.txt
 streamlit run 02_netflix_clustering/app.py
 ```
 
-## Using Real Data
+## Data Sources
 
-The app generates synthetic Netflix-like data. To use the real dataset:
+The app tries these sources in order:
 
-1. Download the [Netflix Movies and TV Shows](https://www.kaggle.com/datasets/shivamb/netflix-shows) dataset from Kaggle
-2. Place the CSV file at `02_netflix_clustering/data/netflix_titles.csv`
-3. Restart the app
+1. **Local CSV** — Place the CSV file at `02_netflix_clustering/data/netflix_titles.csv`
+2. **Kaggle** — Automatically downloads the [Netflix Movies and TV Shows](https://www.kaggle.com/datasets/shivamb/netflix-shows) dataset if Kaggle credentials are configured (`~/.kaggle/kaggle.json` or `KAGGLE_USERNAME`/`KAGGLE_KEY` env vars)
+3. **Synthetic data** — Generates ~2 000 realistic rows as a fallback

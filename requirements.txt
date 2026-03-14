@@ -22,5 +22,9 @@ shap>=0.42.0
 # Imbalanced data handling (Project 4: Churn)
 imbalanced-learn>=0.11.0
 
+# Data sources
+kagglehub>=1.0.0               # Kaggle dataset downloads (Projects 1, 2, 3, 4)
+spotipy>=2.24.0                # Spotify Web API client (Project 3)
+
 # Interactive UI
 streamlit>=1.28.0

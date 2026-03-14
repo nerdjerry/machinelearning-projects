@@ -26,10 +26,10 @@ pip install -r requirements.txt
 streamlit run 04_churn_predictor/app.py
 ```
 
-## Using Real Data
+## Data Sources
 
-The app generates synthetic telecom churn data (~26% churn rate). To use real data:
+The app tries these sources in order:
 
-1. Download the [Telco Customer Churn](https://www.kaggle.com/datasets/blastchar/telco-customer-churn) dataset from Kaggle
-2. Place the CSV file at `04_churn_predictor/data/churn.csv`
-3. Restart the app
+1. **Local CSV** — Place the CSV file at `04_churn_predictor/data/churn.csv`
+2. **Kaggle** — Automatically downloads the [Telco Customer Churn](https://www.kaggle.com/datasets/blastchar/telco-customer-churn) dataset if Kaggle credentials are configured (`~/.kaggle/kaggle.json` or `KAGGLE_USERNAME`/`KAGGLE_KEY` env vars)
+3. **Synthetic data** — Generates ~7 000 realistic rows (~26 % churn rate) as a fallback

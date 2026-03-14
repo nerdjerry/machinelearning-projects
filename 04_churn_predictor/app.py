@@ -173,15 +173,42 @@ def _generate_synthetic_data(n: int = 7000) -> pd.DataFrame:
 
 @st.cache_data
 def load_data() -> pd.DataFrame:
-    """Load churn data from CSV, falling back to synthetic generation."""
+    """Load churn data from CSV, Kaggle, or generate synthetic data.
+
+    Priority order:
+      1. Local CSV at ``data/churn.csv``
+      2. Automatic download via ``kagglehub`` (requires Kaggle credentials)
+      3. Synthetic data (~7 000 rows, ~26 % churn rate)
+    """
     if os.path.exists(DATA_PATH):
         df = pd.read_csv(DATA_PATH)
         # TotalCharges may arrive as string with blanks – coerce to numeric.
         df["TotalCharges"] = pd.to_numeric(df["TotalCharges"], errors="coerce")
         df.dropna(subset=["TotalCharges"], inplace=True)
-    else:
-        df = _generate_synthetic_data()
-    return df
+        return df
+
+    # ----- Try Kaggle download -----
+    try:
+        import kagglehub  # noqa: E401 – optional dependency
+
+        dataset_path = kagglehub.dataset_download(
+            "blastchar/telco-customer-churn"
+        )
+        # The Kaggle dataset file has a different name from our local convention
+        for fname in os.listdir(dataset_path):
+            if fname.endswith(".csv"):
+                kaggle_csv = os.path.join(dataset_path, fname)
+                df = pd.read_csv(kaggle_csv)
+                if TARGET in df.columns:
+                    df["TotalCharges"] = pd.to_numeric(
+                        df["TotalCharges"], errors="coerce"
+                    )
+                    df.dropna(subset=["TotalCharges"], inplace=True)
+                    return df
+    except Exception:
+        pass  # Kaggle credentials not configured or download failed
+
+    return _generate_synthetic_data()
 
 
 # ──────────────────────────────────────────────────────────────

@@ -1,6 +1,6 @@
 # 🎵 Spotify Song Popularity Predictor
 
-**Difficulty: 5/10 — First taste of live API data**
+**Difficulty: 5/10 — API integration with advanced regression**
 
 ## What It Is
 
@@ -8,7 +8,7 @@ Use Spotify audio features like tempo, energy, danceability, and valence to trai
 
 ## Tech Stack
 
-- Python, pandas, XGBoost, LightGBM, SHAP, scikit-learn, Matplotlib/Seaborn, Streamlit
+- Python, pandas, XGBoost, LightGBM, SHAP, scikit-learn, Matplotlib/Seaborn, Streamlit, Spotipy
 
 ## What You Learn
 
@@ -25,12 +25,11 @@ pip install -r requirements.txt
 streamlit run 03_spotify_popularity/app.py
 ```
 
-## Using Real Data
+## Data Sources
 
-The app generates synthetic Spotify-like data. To use real data:
+The app tries these sources in order:
 
-1. Download a [Spotify Tracks Dataset](https://www.kaggle.com/datasets/maharshipandya/-spotify-tracks-dataset) from Kaggle
-2. Place the CSV file at `03_spotify_popularity/data/spotify_tracks.csv`
-3. Restart the app
-
-Alternatively, you can use the [Spotipy](https://spotipy.readthedocs.io/) library to collect data directly from the Spotify API.
+1. **Local CSV** — Place a CSV file at `03_spotify_popularity/data/spotify_tracks.csv`
+2. **Spotify Web API** — Set `SPOTIPY_CLIENT_ID` and `SPOTIPY_CLIENT_SECRET` environment variables ([create an app on the Spotify Developer Dashboard](https://developer.spotify.com/dashboard))
+3. **Kaggle** — Automatically downloads the [Spotify Tracks Dataset](https://www.kaggle.com/datasets/maharshipandya/-spotify-tracks-dataset) if Kaggle credentials are configured (`~/.kaggle/kaggle.json` or `KAGGLE_USERNAME`/`KAGGLE_KEY` env vars)
+4. **Synthetic data** — Generates ~5 000 realistic rows as a fallback

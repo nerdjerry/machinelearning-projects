@@ -74,11 +74,13 @@ COUNTRY_POOL = [
 
 @st.cache_data
 def load_data() -> pd.DataFrame:
-    """Load Netflix titles from CSV or generate a realistic synthetic dataset.
+    """Load Netflix titles from CSV, Kaggle, or generate a synthetic dataset.
 
-    Looks for ``data/netflix_titles.csv`` relative to this script.  When the
-    file is missing it produces ~2 000 synthetic rows whose distributions
-    approximate the real Netflix catalogue.
+    Priority order:
+      1. Local CSV at ``data/netflix_titles.csv``
+      2. Automatic download via ``kagglehub`` (requires Kaggle credentials)
+      3. Synthetic data (~2 000 rows) whose distributions approximate the
+         real Netflix catalogue
     """
     csv_path = os.path.join(os.path.dirname(__file__), "data", "netflix_titles.csv")
 
@@ -87,6 +89,20 @@ def load_data() -> pd.DataFrame:
         expected = {"type", "title", "rating", "listed_in", "release_year"}
         if expected.issubset(df.columns):
             return df
+
+    # ----- Try Kaggle download -----
+    try:
+        import kagglehub  # noqa: E401 – optional dependency
+
+        dataset_path = kagglehub.dataset_download("shivamb/netflix-shows")
+        kaggle_csv = os.path.join(dataset_path, "netflix_titles.csv")
+        if os.path.exists(kaggle_csv):
+            df = pd.read_csv(kaggle_csv)
+            expected = {"type", "title", "rating", "listed_in", "release_year"}
+            if expected.issubset(df.columns):
+                return df
+    except Exception:
+        pass  # Kaggle credentials not configured or download failed
 
     # ----- Synthetic data generation -----
     rng = np.random.RandomState(42)

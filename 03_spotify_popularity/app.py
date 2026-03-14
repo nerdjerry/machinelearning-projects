@@ -69,9 +69,122 @@ TARGET = "popularity"
 # =============================================================
 # Data loading / synthetic generation
 # =============================================================
+
+
+def _fetch_from_spotify_api() -> "pd.DataFrame | None":
+    """Fetch tracks and audio features from the Spotify Web API.
+
+    Uses the **Client Credentials** flow via the ``spotipy`` library, which
+    reads ``SPOTIPY_CLIENT_ID`` and ``SPOTIPY_CLIENT_SECRET`` from the
+    environment.  Tracks are collected from several editorial playlists to
+    ensure genre diversity, then audio features are attached in batches.
+
+    Returns ``None`` when the API is unreachable, credentials are missing,
+    or the audio-features endpoint is unavailable.
+    """
+    import spotipy  # noqa: E401 – optional dependency
+    from spotipy.oauth2 import SpotifyClientCredentials
+
+    sp = spotipy.Spotify(
+        auth_manager=SpotifyClientCredentials(),
+        requests_timeout=10,
+    )
+
+    # Curated editorial playlists covering several genres
+    playlist_ids = [
+        "37i9dQZF1DXcBWIGoYBM5M",  # Today's Top Hits
+        "37i9dQZF1DX0XUsuxWHRQd",  # RapCaviar
+        "37i9dQZF1DWXRqgorJj26U",  # Rock Classics
+        "37i9dQZF1DX4sWSpwq3LiO",  # Peaceful Piano
+        "37i9dQZF1DX1lVhptIYRda",  # Hot Country
+        "37i9dQZF1DXa8NOEUWPn9W",  # Indie Pop
+        "37i9dQZF1DX4JAvHpjipBk",  # New Music Friday
+        "37i9dQZF1DX10zKzsJ2jva",  # Viva Latino
+    ]
+
+    tracks: list[dict] = []
+    seen_ids: set[str] = set()
+
+    for pid in playlist_ids:
+        try:
+            results = sp.playlist_tracks(pid, limit=100)
+            for item in results.get("items", []):
+                track = item.get("track")
+                if not track or not track.get("id"):
+                    continue
+                tid = track["id"]
+                if tid in seen_ids:
+                    continue
+                seen_ids.add(tid)
+                tracks.append(
+                    {
+                        "track_id": tid,
+                        "track_name": track.get("name", "Unknown"),
+                        "artist_name": (
+                            track["artists"][0]["name"]
+                            if track.get("artists")
+                            else "Unknown"
+                        ),
+                        "album_name": (
+                            track["album"]["name"]
+                            if track.get("album")
+                            else "Unknown"
+                        ),
+                        "popularity": track.get("popularity", 0),
+                        "explicit": int(track.get("explicit", False)),
+                        "duration_ms": track.get("duration_ms", 0),
+                    }
+                )
+        except Exception:
+            continue
+
+    if not tracks:
+        return None
+
+    # Fetch audio features in batches of 100
+    track_ids = [t["track_id"] for t in tracks]
+    audio_keys = [
+        "danceability", "energy", "key", "loudness", "mode",
+        "speechiness", "acousticness", "instrumentalness",
+        "liveness", "valence", "tempo", "time_signature",
+    ]
+
+    for i in range(0, len(track_ids), 100):
+        batch = track_ids[i : i + 100]
+        try:
+            features_list = sp.audio_features(batch)
+        except Exception:
+            # audio_features endpoint may be unavailable for newer apps
+            return None
+
+        for j, feat in enumerate(features_list or []):
+            if feat is None:
+                continue
+            idx = i + j
+            for key in audio_keys:
+                tracks[idx][key] = feat.get(key, 0)
+
+    df = pd.DataFrame(tracks)
+
+    # Keep only rows where all audio features were successfully fetched
+    required = AUDIO_FEATURES + [TARGET, "track_name", "artist_name", "album_name"]
+    if not all(col in df.columns for col in required):
+        return None
+
+    df = df.dropna(subset=AUDIO_FEATURES).reset_index(drop=True)
+    return df if len(df) >= 50 else None
+
+
 @st.cache_data
 def load_data() -> pd.DataFrame:
-    """Load the Spotify dataset from CSV or generate a synthetic fallback.
+    """Load Spotify data from CSV, API, Kaggle, or synthetic fallback.
+
+    Priority order:
+      1. Local CSV at ``data/spotify_tracks.csv``
+      2. Spotify Web API via ``spotipy`` (requires ``SPOTIPY_CLIENT_ID``
+         and ``SPOTIPY_CLIENT_SECRET`` environment variables)
+      3. Kaggle dataset via ``kagglehub`` (requires Kaggle credentials)
+      4. Synthetic data (~5 000 rows)
 
     The synthetic dataset mimics real Spotify audio-feature distributions
     so the ML pipeline behaves realistically even without real data.
@@ -82,6 +195,38 @@ def load_data() -> pd.DataFrame:
         required = AUDIO_FEATURES + [TARGET, "track_name", "artist_name", "album_name"]
         if all(col in df.columns for col in required):
             return df
+
+    # ----- Try Spotify API -----
+    try:
+        api_df = _fetch_from_spotify_api()
+        if api_df is not None:
+            return api_df
+    except Exception:
+        pass  # spotipy not installed or credentials missing
+
+    # ----- Try Kaggle download -----
+    try:
+        import kagglehub  # noqa: E401 – optional dependency
+
+        dataset_path = kagglehub.dataset_download(
+            "maharshipandya/-spotify-tracks-dataset"
+        )
+        for fname in os.listdir(dataset_path):
+            if fname.endswith(".csv"):
+                kaggle_csv = os.path.join(dataset_path, fname)
+                df = pd.read_csv(kaggle_csv)
+                if all(col in df.columns for col in AUDIO_FEATURES + [TARGET]):
+                    # Normalise column names to match our conventions
+                    if "track_name" not in df.columns and "name" in df.columns:
+                        df = df.rename(columns={"name": "track_name"})
+                    if "artist_name" not in df.columns and "artists" in df.columns:
+                        df = df.rename(columns={"artists": "artist_name"})
+                    for meta in ("track_name", "artist_name", "album_name"):
+                        if meta not in df.columns:
+                            df[meta] = "Unknown"
+                    return df
+    except Exception:
+        pass  # Kaggle credentials not configured or download failed
 
     # --- Synthetic fallback (~5000 rows) ---
     rng = np.random.RandomState(42)
