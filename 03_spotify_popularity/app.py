@@ -143,11 +143,9 @@ def _fetch_from_spotify_api() -> "pd.DataFrame | None":
 
     # Fetch audio features in batches of 100
     track_ids = [t["track_id"] for t in tracks]
-    audio_keys = [
-        "danceability", "energy", "key", "loudness", "mode",
-        "speechiness", "acousticness", "instrumentalness",
-        "liveness", "valence", "tempo", "time_signature",
-    ]
+    # duration_ms and explicit come from the track metadata, not the
+    # audio-features endpoint, so we filter them out here.
+    audio_keys = [f for f in AUDIO_FEATURES if f not in ("duration_ms", "explicit")]
 
     for i in range(0, len(track_ids), 100):
         batch = track_ids[i : i + 100]
